@@ -13,6 +13,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+BenchmarkDotNet.Artifacts/
 
 ## Visual Studio cache/options
 .vs/
