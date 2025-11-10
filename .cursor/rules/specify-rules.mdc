@@ -1,0 +1,29 @@
+﻿# ioc-install-generator Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2025-11-10
+
+## Active Technologies
+
+- C# (.NET 6.0 o superior) (001-ioc-install-generator)
+
+## Project Structure
+
+```text
+src/
+tests/
+```
+
+## Commands
+
+# Add commands for C# (.NET 6.0 o superior)
+
+## Code Style
+
+C# (.NET 6.0 o superior): Follow standard conventions
+
+## Recent Changes
+
+- 001-ioc-install-generator: Added C# (.NET 6.0 o superior)
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->
