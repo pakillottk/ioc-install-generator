@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)/GeneratedFiles</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IoC.InstallGenerator\IoC.InstallGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\IoC.InstallGenerator.Abstractions\IoC.InstallGenerator.Abstractions.csproj" />
+    <ProjectReference Include="..\Demo.Modules\ModuleA\ModuleA.csproj" />
+    <ProjectReference Include="..\Demo.Modules\ModuleB\ModuleB.csproj" />
+    <ProjectReference Include="..\Demo.Modules\ModuleC\ModuleC.csproj" />
+  </ItemGroup>
+
+</Project>
