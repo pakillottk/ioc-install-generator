@@ -3,6 +3,8 @@
 Auto-generated from all feature plans. Last updated: 2025-11-10
 
 ## Active Technologies
+- C# (.NET 8.0) (001-net8-incremental-generator)
+- N/A (source generator, no requiere persistencia) (001-net8-incremental-generator)
 
 - C# (.NET 6.0 o superior) (001-ioc-install-generator)
 
@@ -22,6 +24,7 @@ tests/
 C# (.NET 6.0 o superior): Follow standard conventions
 
 ## Recent Changes
+- 001-net8-incremental-generator: Added C# (.NET 8.0)
 
 - 001-ioc-install-generator: Added C# (.NET 6.0 o superior)
 

@@ -10,89 +10,100 @@ using Microsoft.CodeAnalysis.Text;
 namespace IoC.InstallGenerator
 {
     /// <summary>
-    /// Source generator that discovers IoC installers from referenced assemblies
+    /// Incremental source generator that discovers IoC installers from referenced assemblies
     /// and generates static code to load them at runtime.
     /// </summary>
     /// <remarks>
-    /// This generator analyzes project references (direct and transitive) to find
+    /// This generator uses IIncrementalGenerator for better performance and automatic caching.
+    /// It analyzes project references (direct and transitive) to find
     /// classes implementing <see cref="IoC.InstallGenerator.Abstractions.IIoCInstaller"/>,
     /// then generates a static loader class that can be invoked during application initialization.
     /// </remarks>
     [Generator]
-    public class IoCInstallGenerator : ISourceGenerator
+    public class IoCInstallGenerator : IIncrementalGenerator
     {
         private const int MaxTransitiveDepth = 3;
         private const string IoCInstallerInterfaceName = "IIoCInstaller";
         private const string IoCInstallerNamespace = "IoC.InstallGenerator.Abstractions";
         private const string IoCInstallerLoaderAttributeName = "IoCInstallerLoaderAttribute";
 
-        public void Initialize(GeneratorInitializationContext context)
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // T025: Register a syntax receiver to collect syntax nodes
-            context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
-        }
+            // T027: Create SyntaxProvider to find classes with [IoCInstallerLoader] attribute
+            var loaderClassesProvider = context.SyntaxProvider
+                .CreateSyntaxProvider(
+                    predicate: static (node, _) => node is ClassDeclarationSyntax,
+                    transform: static (ctx, _) => ctx.Node as ClassDeclarationSyntax)
+                .Where(static node => node != null)
+                .Collect();
 
-        public void Execute(GeneratorExecutionContext context)
-        {
-            try
+            // T028: Create CompilationProvider to analyze types implementing IIoCInstaller
+            var compilationProvider = context.CompilationProvider;
+
+            // T029: Combine SyntaxProvider and CompilationProvider
+            var combinedProvider = loaderClassesProvider
+                .Combine(compilationProvider)
+                .Select((tuple, ct) => new
+                {
+                    LoaderClasses = tuple.Left,
+                    Compilation = tuple.Right
+                });
+
+            // T030: Implement RegisterSourceOutput with incremental pipeline
+            context.RegisterSourceOutput(combinedProvider, (sourceContext, data) =>
             {
-                // T026: Get compilation and analyze references
-                if (!(context.SyntaxReceiver is SyntaxReceiver receiver))
+                try
                 {
-                    return;
-                }
-
-                var compilation = context.Compilation;
-                
-                // T027: Discover installers in current and referenced assemblies
-                var installers = DiscoverInstallers(compilation, context);
-
-                // Find classes with [IoCInstallerLoader] attribute
-                var loaderClasses = FindLoaderClasses(receiver, compilation);
-                
-                if (loaderClasses.Count == 0)
-                {
-                    // No loader classes found, skip generation
-                    return;
-                }
-
-                // Generate partial class for each loader class
-                foreach (var loaderClass in loaderClasses)
-                {
-                    // T044: Read InstallOrderAttribute if present for this specific loader class
-                    var installOrder = GetInstallOrder(loaderClass, receiver, compilation);
-
-                    var generatedCode = CodeGenerator.GeneratePartialClass(
-                        loaderClass.ClassName,
-                        loaderClass.Namespace,
-                        installers,
-                        installOrder);
+                    var compilation = data.Compilation;
+                    var loaderClasses = FindLoaderClasses(data.LoaderClasses, compilation);
                     
-                    context.AddSource($"{loaderClass.ClassName}.g.cs", SourceText.From(generatedCode, Encoding.UTF8));
+                    if (loaderClasses.Count == 0)
+                    {
+                        // No loader classes found, skip generation
+                        return;
+                    }
+
+                    // T027: Discover installers in current and referenced assemblies
+                    var installers = DiscoverInstallers(compilation, sourceContext);
+
+                    // Generate partial class for each loader class
+                    foreach (var loaderClass in loaderClasses)
+                    {
+                        // T044: Read InstallOrderAttribute if present for this specific loader class
+                        var installOrder = GetInstallOrder(loaderClass, compilation);
+
+                        var generatedCode = CodeGenerator.GeneratePartialClass(
+                            loaderClass.ClassName,
+                            loaderClass.Namespace,
+                            installers,
+                            installOrder);
+                        
+                        sourceContext.AddSource($"{loaderClass.ClassName}.g.cs", SourceText.From(generatedCode, Encoding.UTF8));
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                // T030, T066: Error handling with clear error messages and diagnostic information
-                var diagnostic = Diagnostic.Create(
-                    new DiagnosticDescriptor(
-                        "IOCGEN001",
-                        "Source Generator Error",
-                        "Error in IoC Install Generator: {0}. Stack trace: {1}",
-                        "IoC.InstallGenerator",
-                        DiagnosticSeverity.Error,
-                        isEnabledByDefault: true),
-                    Location.None,
-                    ex.Message,
-                    ex.StackTrace ?? "No stack trace available");
-                context.ReportDiagnostic(diagnostic);
-            }
+                catch (Exception ex)
+                {
+                    // T030, T066: Error handling with clear error messages and diagnostic information
+                    var diagnostic = Diagnostic.Create(
+                        new DiagnosticDescriptor(
+                            "IOCGEN001",
+                            "Source Generator Error",
+                            "Error in IoC Install Generator: {0}. Stack trace: {1}",
+                            "IoC.InstallGenerator",
+                            DiagnosticSeverity.Error,
+                            isEnabledByDefault: true),
+                        Location.None,
+                        ex.Message,
+                        ex.StackTrace ?? "No stack trace available");
+                    sourceContext.ReportDiagnostic(diagnostic);
+                }
+            });
         }
 
         // T027: Implement installer discovery logic
         // T051: Optimize reference analysis to avoid duplicate processing
         // T052: Implement caching for discovered installers during generation
-        private List<InstallerInfo> DiscoverInstallers(Compilation compilation, GeneratorExecutionContext context)
+        private List<InstallerInfo> DiscoverInstallers(Compilation compilation, SourceProductionContext context)
         {
             var installers = new List<InstallerInfo>();
             var processedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -121,7 +132,7 @@ namespace IoC.InstallGenerator
             List<InstallerInfo> installers,
             HashSet<string> processedAssemblies,
             HashSet<string> discoveredTypes,
-            GeneratorExecutionContext context,
+            SourceProductionContext context,
             int depth)
         {
             if (depth > MaxTransitiveDepth)
@@ -298,9 +309,8 @@ namespace IoC.InstallGenerator
             }
         }
 
-
         // Find classes with [IoCInstallerLoader] attribute
-        private List<LoaderClassInfo> FindLoaderClasses(SyntaxReceiver receiver, Compilation compilation)
+        private List<LoaderClassInfo> FindLoaderClasses(IEnumerable<ClassDeclarationSyntax> classDeclarations, Compilation compilation)
         {
             var loaderClasses = new List<LoaderClassInfo>();
             var loaderAttribute = compilation.GetTypeByMetadataName($"{IoCInstallerNamespace}.{IoCInstallerLoaderAttributeName}");
@@ -310,7 +320,7 @@ namespace IoC.InstallGenerator
                 return loaderClasses;
             }
 
-            foreach (var classDecl in receiver.Classes)
+            foreach (var classDecl in classDeclarations)
             {
                 var semanticModel = compilation.GetSemanticModel(classDecl.SyntaxTree);
                 var classSymbol = semanticModel.GetDeclaredSymbol(classDecl);
@@ -337,7 +347,7 @@ namespace IoC.InstallGenerator
         }
 
         // T044: Read InstallOrderAttribute from a specific loader class
-        private string? GetInstallOrder(LoaderClassInfo loaderClass, SyntaxReceiver receiver, Compilation compilation)
+        private string? GetInstallOrder(LoaderClassInfo loaderClass, Compilation compilation)
         {
             var installOrderAttribute = compilation.GetTypeByMetadataName($"{IoCInstallerNamespace}.InstallOrderAttribute");
             if (installOrderAttribute == null)

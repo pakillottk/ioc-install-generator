@@ -13,7 +13,7 @@ Un Source Generator para .NET que descubre automáticamente instaladores de IoC 
 
 ## Requisitos
 
-- .NET 5.0 o superior
+- .NET 8.0 o superior
 - Proyectos SDK-style (PackageReference)
 
 ## Instalación
@@ -173,21 +173,22 @@ El demo muestra cómo:
 
 Hemos ejecutado benchmarks comparando el Source Generator con implementaciones basadas en reflexión. Los resultados muestran mejoras significativas:
 
-| Métrica | Source Generator | Reflexión | Mejora |
-|---------|------------------|-----------|--------|
-| **Tiempo promedio** | 89.35 ns | 79,934 ns (79.93 µs) | **896x más rápido** |
-| **Memoria allocada** | 104 B | 19,630 B (19.17 KB) | **189x menos memoria** |
-| **GC Gen0 collections** | 0.0124/1000 ops | 2.3193/1000 ops | **187x menos presión GC** |
+| Métrica | Source Generator Incremental | Reflexión | Mejora |
+|---------|-------------------------------|-----------|--------|
+| **Tiempo promedio** | 89.06 ns | 60.81 µs (60,809 ns) | **683x más rápido** |
+| **Memoria allocada** | 104 B | 19.67 KB (20,142 B) | **194x menos memoria** |
+| **GC Gen0 collections** | 0.0124/1000 ops | 2.3804/1000 ops | **192x menos presión GC** |
 
 > **Nota**: Cada benchmark se ejecutó en un proceso separado para evitar sesgo por ensamblados ya cargados.
 
 ### Características de Rendimiento
 
-- ✅ **896 veces más rápido** que implementaciones basadas en reflexión
-- ✅ **189 veces menos memoria** que métodos con reflexión
+- ✅ **683 veces más rápido** que implementaciones basadas en reflexión
+- ✅ **194 veces menos memoria** que métodos con reflexión
 - ✅ Inicialización de hasta 50 ensamblados en <100ms
 - ✅ Sin overhead de descubrimiento dinámico en tiempo de ejecución
 - ✅ Llamadas directas a métodos (sin overhead de reflexión)
+- ✅ Caching automático con IIncrementalGenerator para mejor rendimiento de compilación
 
 ### Ejecutar el Benchmark
 
@@ -204,9 +205,9 @@ Los resultados completos están documentados en [BENCHMARK_RESULTS.md](BENCHMARK
 
 Basado en los resultados del benchmark ejecutado en procesos separados para evitar sesgo:
 
-1. **Rendimiento Excepcional**: El Source Generator es **896 veces más rápido** que la reflexión, reduciendo el tiempo de carga de instaladores de ~79.93 µs a ~89.35 ns. Esta mejora es crítica en aplicaciones que requieren inicialización rápida.
+1. **Rendimiento Excepcional**: El Source Generator Incremental es **683 veces más rápido** que la reflexión, reduciendo el tiempo de carga de instaladores de ~60.81 µs a ~89.06 ns. Esta mejora es crítica en aplicaciones que requieren inicialización rápida.
 
-2. **Eficiencia de Memoria**: El Source Generator utiliza **189 veces menos memoria** (104 B vs 19,630 B), reduciendo significativamente la presión sobre el Garbage Collector y mejorando el rendimiento general de la aplicación.
+2. **Eficiencia de Memoria**: El Source Generator Incremental utiliza **194 veces menos memoria** (104 B vs 20,142 B), reduciendo significativamente la presión sobre el Garbage Collector y mejorando el rendimiento general de la aplicación.
 
 3. **Compatibilidad Moderna**: A diferencia de la reflexión, el Source Generator es completamente compatible con tecnologías modernas como:
    - **AOT (Ahead-of-Time compilation)**: Necesario para aplicaciones móviles y embebidas
@@ -228,12 +229,13 @@ Basado en los resultados del benchmark ejecutado en procesos separados para evit
 
 ## Compatibilidad
 
-- ✅ .NET 5.0+
+- ✅ .NET 8.0+
 - ✅ Compatible con AOT (Ahead-of-Time compilation)
 - ✅ Compatible con Trimming
 - ✅ Proyectos SDK-style (PackageReference)
 - ✅ Referencias de proyecto y paquetes NuGet
 - ✅ Sin dependencias de reflexión en tiempo de ejecución
+- ✅ Generador incremental (IIncrementalGenerator) para mejor rendimiento
 
 ## Documentación
 
@@ -271,10 +273,11 @@ src/
 
 ## Cómo Funciona
 
-1. **En tiempo de compilación**: El source generator analiza todas las referencias del proyecto (directas y transitivas hasta 3 niveles de profundidad)
-2. **Descubrimiento**: Encuentra todas las clases públicas que implementan `IIoCInstaller` y tienen un constructor público sin parámetros
-3. **Generación**: Genera código estático en una clase parcial que instancia y ejecuta cada instalador directamente, sin usar reflexión
-4. **Tiempo de ejecución**: El código generado se ejecuta de forma eficiente, llamando directamente a cada instalador
+1. **En tiempo de compilación**: El source generator incremental (IIncrementalGenerator) analiza todas las referencias del proyecto (directas y transitivas hasta 3 niveles de profundidad) usando un pipeline incremental
+2. **Descubrimiento**: Encuentra todas las clases públicas que implementan `IIoCInstaller` y tienen un constructor público sin parámetros usando SyntaxProvider y CompilationProvider
+3. **Caching automático**: IIncrementalGenerator proporciona caching automático, solo reprocesando archivos modificados en compilaciones incrementales
+4. **Generación**: Genera código estático en una clase parcial que instancia y ejecuta cada instalador directamente, sin usar reflexión
+5. **Tiempo de ejecución**: El código generado se ejecuta de forma eficiente, llamando directamente a cada instalador
 
 ## Licencia
 

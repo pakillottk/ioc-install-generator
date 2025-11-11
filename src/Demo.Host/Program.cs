@@ -1,5 +1,4 @@
 ﻿using System;
-using IoC.InstallGenerator.Abstractions;
 
 namespace Demo.Host
 {

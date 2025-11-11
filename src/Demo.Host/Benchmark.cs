@@ -13,7 +13,7 @@ namespace Demo.Host
     /// Se ejecuta en un proceso separado para evitar sesgo por ensamblados ya cargados.
     /// </summary>
     [MemoryDiagnoser]
-    [SimpleJob(BenchmarkDotNet.Jobs.RuntimeMoniker.Net50)]
+    [SimpleJob(BenchmarkDotNet.Jobs.RuntimeMoniker.Net80)]
     public class GeneratorBenchmark
     {
         private SimpleContainerAdapter _container = null!;
@@ -40,7 +40,7 @@ namespace Demo.Host
     /// Se ejecuta en un proceso separado para evitar sesgo por ensamblados ya cargados.
     /// </summary>
     [MemoryDiagnoser]
-    [SimpleJob(BenchmarkDotNet.Jobs.RuntimeMoniker.Net50)]
+    [SimpleJob(BenchmarkDotNet.Jobs.RuntimeMoniker.Net80)]
     public class ReflectionBenchmark
     {
         private SimpleContainerAdapter _container = null!;
