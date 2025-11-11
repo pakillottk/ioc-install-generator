@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -155,6 +156,12 @@ namespace IoC.InstallGenerator
                 
                 foreach (var type in allTypes)
                 {
+                    // Only process types that belong to the current assembly
+                    if (type.ContainingAssembly?.Name != assemblyName)
+                    {
+                        continue;
+                    }
+                    
                     // T031: Validate public, instanciable installer classes
                     if (IsValidInstaller(type, installerInterface))
                     {

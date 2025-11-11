@@ -7,16 +7,26 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>IoC.InstallGenerator</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>IoC.InstallGenerator</Authors>
+    <Description>Source generator that discovers IoC installers from referenced assemblies and generates static code to load them at runtime.</Description>
+    <NoWarn>$(NoWarn);RS1038;NU5128</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.14.0" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.14.0" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IoC.InstallGenerator.Abstractions\IoC.InstallGenerator.Abstractions.csproj" />
+    <ProjectReference Include="..\IoC.InstallGenerator.Abstractions\IoC.InstallGenerator.Abstractions.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers\dotnet\cs\" />
+    <None Include="$(TargetDir)IoC.InstallGenerator.Abstractions.dll" Pack="true" PackagePath="analyzers\dotnet\cs\" />
   </ItemGroup>
 
 </Project>

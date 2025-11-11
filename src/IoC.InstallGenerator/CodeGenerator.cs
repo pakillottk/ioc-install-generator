@@ -161,18 +161,24 @@ namespace IoC.InstallGenerator
                 .Select(s => s.Trim())
                 .Where(s => !string.IsNullOrEmpty(s))
                 .ToArray();
+            
             var ordered = new List<InstallerInfo>();
             var unordered = new List<InstallerInfo>(installerList);
 
             // First, add installers in the specified order
-            foreach (var assemblyName in orderArray)
+            // Match by assembly name (case-insensitive)
+            foreach (var assemblyNameInOrder in orderArray)
             {
                 var matching = unordered.Where(i => 
-                    string.Equals(i.AssemblyName, assemblyName, StringComparison.OrdinalIgnoreCase)).ToList();
-                ordered.AddRange(matching);
-                foreach (var item in matching)
+                    string.Equals(i.AssemblyName, assemblyNameInOrder, StringComparison.OrdinalIgnoreCase)).ToList();
+                
+                if (matching.Count > 0)
                 {
-                    unordered.Remove(item);
+                    ordered.AddRange(matching);
+                    foreach (var item in matching)
+                    {
+                        unordered.Remove(item);
+                    }
                 }
             }
 
